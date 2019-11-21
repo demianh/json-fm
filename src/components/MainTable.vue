@@ -2,7 +2,7 @@
 	<div class="main-table mt-3">
 		<h4>
 			Your JSON Data
-			<a @click="showJson = !showJson" tabindex="-1" style="font-size: 14px">Show Input Data</a>
+			<a @click="showJson = !showJson" tabindex="-1" style="font-size: 14px; font-weight: normal;">Show Input Data</a>
 		</h4>
 		<div class="mb-2" v-if="showJson">
 			<textarea v-model="input" style="width: 100%; height: 200px" class="form-control"></textarea>
@@ -22,10 +22,10 @@
 							display-attribute="id"
 						>
 						</vue-simple-suggest>
-						<input type="text" v-model="col.filter" class="form-control mt-1" :class="{'is-invalid': filterErrors[$index]}" placeholder="filter expression" :disabled="!schema[col.property]">
+						<input type="text" v-model="col.filter" class="form-control mt-1" :class="{'is-invalid': filterErrors[$index]}" placeholder="filter expression" :disabled="!col.property">
 						<div class="invalid-feedback">{{filterErrors[$index]}}</div>
 						<label class="form-check">
-							<input class="form-check-input" type="checkbox" v-model="col.group" :disabled="!schema[col.property]">
+							<input class="form-check-input" type="checkbox" v-model="col.group" :disabled="!col.property">
 							<span class="form-check-label">Group</span>
 						</label>
 						<label class="form-check" v-if="schema[col.property] && (schema[col.property].array || schema[col.property].object)">
@@ -148,7 +148,7 @@ export default class MainTable extends Vue {
 	}
 
 	get hasGroupCols(): boolean {
-		return this.cols.some(col => col.group && col.property && this.schema[col.property]);
+		return this.cols.some(col => col.group && col.property);
 	}
 
 	get hasFilters(): boolean {
@@ -206,7 +206,7 @@ export default class MainTable extends Vue {
 			let groupRows: any[] = [];
 			let groupCols: number[] = [];
 			this.cols.forEach((col, index) => {
-				if (col.group && col.property && this.schema[col.property]) {
+				if (col.group && col.property) {
 					groupCols.push(index);
 				}
 			});
@@ -302,7 +302,11 @@ export default class MainTable extends Vue {
 		} else if (typeof row[index] === 'object') {
 			Object.keys(row[index]).forEach((key: any) => {
 				let newRow = row.slice();
-				newRow[index] = key + ': ' + row[index][key];
+				if (typeof row[index][key] === 'object') {
+					newRow[index] = key + ': ' + JSON.stringify(row[index][key]);
+				} else {
+					newRow[index] = key + ': ' + row[index][key];
+				}
 				rows.push(newRow);
 			})
 		} else {
@@ -316,7 +320,9 @@ export default class MainTable extends Vue {
 		this.cols.forEach(col => {
 			let cellValue = '';
 			if (col && col.property) {
-				let parts = col.property.split('.');
+				let property = col.property;
+				//property = property.replace('[].', '.0.');
+				let parts = property.split('.');
 				let val = entry;
 				parts.forEach((part) => {
 					if (val !== null) {

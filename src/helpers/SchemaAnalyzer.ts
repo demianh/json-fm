@@ -14,39 +14,39 @@ export default class SchemaAnalyzer {
 		return schema;
 	}
 
-	private analyzeArray(schema: any, node: any[], prefix: string|null = null) {
+	private analyzeArray(schema: any, node: any[], prefix: string = '') {
 		node.forEach(row => {
-			Object.keys(row).forEach((key: string) => {
-				let prefixedKey: string = key;
-				if (prefix) {
-					prefixedKey = prefix + '.' + key;
-				}
-
-				let type: string = this.getType(row[key]);
-				this.increaseTypeCount(schema, key, type);
-				if (type === 'object') {
-					this.analyzeObject(schema, row[key], prefixedKey);
-				}
-			});
+			if (Array.isArray(row)) {
+				this.analyzeArray(schema, row, prefix + '.0');
+			} else if (node !== null && typeof node === 'object') {
+				this.analyzeObject(schema, row, prefix);
+			}
 		});
 	}
 
-	private analyzeObject(schema: any, node: any, prefix: string|null = null) {
+	private analyzeObject(schema: any, node: any, prefix: string) {
 		if (node !== null && typeof node === 'object') {
 			Object.keys(node).forEach((key) => {
-				let prefixedKey: string = key;
-				if (prefix) {
-					prefixedKey = prefix + '.' + key;
-				}
-
-				let type: string = this.getType(node[key]);
-				this.increaseTypeCount(schema, prefixedKey, type);
-
-				// child object types
-				if (type === 'object') {
-					this.analyzeObject(schema, node[key], prefixedKey);
-				}
+				this.analyzeProperty(schema, key, node[key], prefix);
 			});
+		}
+	}
+
+	private analyzeProperty(schema: any, key: string, value: any, prefix: string) {
+		let prefixedKey: string = key;
+		if (prefix) {
+			prefixedKey = prefix + '.' + key;
+		}
+
+		let type: string = this.getType(value);
+		this.increaseTypeCount(schema, prefixedKey, type);
+
+		// child object types
+		if (type === 'object') {
+			this.analyzeObject(schema, value, prefixedKey);
+		}
+		if (type === 'array') {
+			this.analyzeArray(schema, value, prefixedKey + '.0');
 		}
 	}
 

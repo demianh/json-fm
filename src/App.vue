@@ -28,10 +28,11 @@ export default class App extends Vue {}
 </script>
 
 <style lang="scss">
-	// Global Styles
-	input.form-control::-webkit-input-placeholder {
-		color: #ddd;
+	body .app {
+		font-family: 'Work Sans', sans-serif;
 	}
+
+	// Global Styles
 
 	.text-blue {
 		color: $blue-dark;
@@ -41,24 +42,36 @@ export default class App extends Vue {}
 		color: $orange-dark;
 	}
 
-	h4 {
-		color: $blue-dark;
-		font-size: 1.1rem;
-	}
-
-	.table th,
-	.table td,
-	.table input {
-		font-size: 13px;
-	}
-
 	.app {
+		input.form-control::-webkit-input-placeholder {
+			color: #ddd;
+		}
+
 		a {
 			color: $blue-light;
 			cursor: pointer;
 		}
 		a:hover {
 			color: $blue-dark;
+		}
+
+		h1, h2, h3, h4, h5 {
+			font-weight: 700 !important;
+		}
+
+		h4 {
+			color: $blue-dark;
+			font-size: 1.1rem;
+		}
+
+		.table th,
+		.table td,
+		.table input {
+			font-size: 13px;
+		}
+
+		.navbar-brand {
+			font-family: 'Calistoga', cursive;
 		}
 	}
 </style>
