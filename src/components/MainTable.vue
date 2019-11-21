@@ -1,40 +1,60 @@
 <template>
 	<div class="main-table mt-3">
-		<h4 @click="showJson = !showJson">JSON</h4>
+		<h4>
+			Your JSON Data
+			<a @click="showJson = !showJson" tabindex="-1" style="font-size: 14px">Show Input Data</a>
+		</h4>
 		<div class="mb-2" v-if="showJson">
-			<textarea v-model="input" style="width: 100%; height: 80px" class="form-control"></textarea>
+			<textarea v-model="input" style="width: 100%; height: 200px" class="form-control"></textarea>
 		</div>
 		<h4>Sheet ({{sheet.length}} rows)</h4>
 		<div v-if="sheet">
 			<table class="table table-sm">
 				<tr>
 					<th v-for="(col, $index) in cols" class="col-config">
-						<input type="text" v-model="col.property" class="form-control mb-1" placeholder="property">
-						<input type="text" v-model="col.explode" class="form-control mb-1" placeholder="explode">
-						<input type="text" v-model="col.filter" class="form-control" :class="{'is-invalid': filterErrors[$index]}" placeholder="filter expression">
+						<vue-simple-suggest
+							v-model="col.property"
+							:min-length="0"
+							:list="propertySuggestions"
+							:max-suggestions="1000"
+							:filter-by-query="true"
+							value-attribute="id"
+							display-attribute="id"
+						>
+						</vue-simple-suggest>
+						<input type="text" v-model="col.filter" class="form-control mt-1" :class="{'is-invalid': filterErrors[$index]}" placeholder="filter expression" :disabled="!schema[col.property]">
 						<div class="invalid-feedback">{{filterErrors[$index]}}</div>
 						<label class="form-check">
-							<input class="form-check-input" type="checkbox" v-model="col.group">
+							<input class="form-check-input" type="checkbox" v-model="col.group" :disabled="!schema[col.property]">
 							<span class="form-check-label">Group</span>
 						</label>
+						<label class="form-check" v-if="schema[col.property] && (schema[col.property].array || schema[col.property].object)">
+							<input class="form-check-input" type="checkbox" v-model="col.expand">
+							<span class="form-check-label">Expand</span>
+						</label>
 					</th>
-					<th v-if="hasGroupCols" class="col-config"></th>
+					<th v-if="hasGroupCols" class="col-config">COUNT</th>
 					<th class="col-config" style="width: 50px">
 						<button class="btn btn-success" @click="addCol">+</button>
 					</th>
 				</tr>
 				<tr>
 					<th v-for="(col, $index) in cols" class="col-sort">
-						<a @click="setSort($index)" :class="{'text-muted': sortBy[0][0] !== $index}">sort</a>
+						<a @click="setSort($index)" :class="{'font-weight-bold': sortBy[0][0] === $index}" tabindex="-1">sort</a>
 					</th>
 					<th v-if="hasGroupCols" class="col-sort">
-						<a @click="setSort(cols.length)" :class="{'text-muted': sortBy[0][0] !== cols.length}">sort</a>
+						<a @click="setSort(cols.length)" :class="{'font-weight-bold': sortBy[0][0] === cols.length}" tabindex="-1">sort</a>
 					</th>
 					<th class="col-sort"></th>
 				</tr>
 				<tr v-for="row in sheet">
 					<td v-for="cell in row">
-						{{cell}}
+						<span v-if="cell === null" class="text-muted">
+							null
+						</span>
+						<span v-else>
+							{{cell}}
+						</span>
 					</td>
 					<td></td>
 				</tr>
@@ -44,41 +64,50 @@
 </template>
 
 <script lang="ts">
-import {Component, Prop, Vue} from 'vue-property-decorator';
+import {Component, Prop, Vue, Watch} from 'vue-property-decorator';
+// @ts-ignore
+import VueSimpleSuggest from 'vue-simple-suggest'
 let objectHash = require('object-hash');
 
-import * as exampleData from '../../examples/small.json';
+//import * as exampleData from '../../examples/small.json';
 //import * as exampleData from '../../examples/songs.json';
+import * as exampleData from '../../examples/nested.json';
+import SchemaAnalyzer from "@/helpers/SchemaAnalyzer";
 
 interface ColConfig {
 	property?: string;
-	explode?: string;
 	filter?: string;
 	group: boolean;
+	expand: boolean;
 }
 
-@Component
+@Component({
+	components: {VueSimpleSuggest}
+})
 export default class MainTable extends Vue {
-	@Prop() private msg!: string;
 
-	showJson: boolean = false;
+	showJson: boolean = true;
 
 	cols: ColConfig[] = [
 		{
-			property: 'title',
+			property: 'name',
 			group: false,
+			expand: false,
 		},
 		{
-			property: 'pageRondoBlue',
+			property: 'props.color',
 			group: false,
+			expand: false,
 		},
 		{
-			explode: 'author',
+			property: 'actions',
 			group: false,
+			expand: true,
 		},
 		{
-			explode: 'chords',
+			property: 'props',
 			group: false,
+			expand: false,
 		}
 	];
 
@@ -107,15 +136,26 @@ export default class MainTable extends Vue {
 		}
 	}
 
+	get schema(): {[prop: string]: any } {
+		let analyzer = new SchemaAnalyzer(this.parsedInput);
+		return analyzer.getSchema();
+	}
+
+	get propertySuggestions() {
+		return Object.keys(this.schema).map((key) => {
+			return {id: key, title: key + ' (' + Object.keys(this.schema[key]).join(', ') + ')'}
+		});
+	}
+
 	get hasGroupCols(): boolean {
-		return this.cols.some(col => col.group);
+		return this.cols.some(col => col.group && col.property && this.schema[col.property]);
 	}
 
 	get hasFilters(): boolean {
 		return this.cols.some(col => col.filter);
 	}
 
-	get sheet(): any[] {
+	get rawSheet(): any[] {
 		let rows: any[] = [];
 		this.filterErrors = {};
 
@@ -123,19 +163,25 @@ export default class MainTable extends Vue {
 		this.parsedInput.forEach(entry => {
 			rows.push(this.getRawRow(entry));
 		});
+		return rows;
+	}
 
-		// explode
+	get expandedSheet() {
+		let rows = this.rawSheet;
 		this.cols.forEach((col, index) => {
-			if (col.explode) {
-				let exploded: any[] = [];
+			if (col.expand) {
+				let expanded: any[] = [];
 				rows.forEach(row => {
-					exploded = exploded.concat(this.explodeRow(row, index))
+					expanded = expanded.concat(this.explodeRow(row, index))
 				});
-				rows = exploded;
+				rows = expanded;
 			}
 		});
+		return rows;
+	}
 
-		// filter
+	get filteredSheet() {
+		let rows = this.expandedSheet;
 		if (this.hasFilters) {
 			try {
 				rows = rows.filter(row => {
@@ -150,14 +196,17 @@ export default class MainTable extends Vue {
 				return [];
 			}
 		}
+		return rows;
+	}
 
-		// group
+	get groupedSheet() {
+		let rows = this.filteredSheet;
 		if (this.hasGroupCols) {
 			let hashes = new Map();
 			let groupRows: any[] = [];
 			let groupCols: number[] = [];
 			this.cols.forEach((col, index) => {
-				if (col.group) {
+				if (col.group && col.property && this.schema[col.property]) {
 					groupCols.push(index);
 				}
 			});
@@ -166,7 +215,8 @@ export default class MainTable extends Vue {
 				groupCols.forEach(groupCol => {
 					hashObj.push(row[groupCol])
 				});
-				let hash = objectHash(hashObj);
+				//let hash = objectHash(hashObj);
+				let hash = this.hash(hashObj);
 				if (hashes.has(hash)) {
 					hashes.set(hash, hashes.get(hash) + 1);
 				} else {
@@ -181,16 +231,18 @@ export default class MainTable extends Vue {
 				groupCols.forEach(groupCol => {
 					hashObj.push(row[groupCol])
 				});
-				let hash = objectHash(hashObj);
+				let hash = this.hash(hashObj);
 				row.push(hashes.get(hash));
 			});
 
 			rows = groupRows;
 		}
+		return rows;
+	}
 
-
+	get sortedSheet() {
 		// sort
-		rows = rows.sort((a, b) => {
+		return this.groupedSheet.sort((a, b) => {
 			let sortIndex = this.sortBy[0][0];
 			let sortOrder = this.sortBy[0][1];
 			let ca = a[sortIndex];
@@ -211,8 +263,14 @@ export default class MainTable extends Vue {
 				}
 			}
 		});
+	}
 
-		return rows;
+	get sheet() {
+		return this.sortedSheet;
+	}
+
+	private hash(obj: any) {
+		return JSON.stringify(obj);
 	}
 
 	public evaluateFilter(filter: string, value: any, row: any[], index: number): boolean {
@@ -234,13 +292,13 @@ export default class MainTable extends Vue {
 				rows.push(newRow);
 			})
 		} else if (typeof row[index] === 'object') {
-			Object.keys(row[index]).forEach((key: any, index: any) => {
+			Object.keys(row[index]).forEach((key: any) => {
 				let newRow = row.slice();
 				newRow[index] = key + ': ' + row[index][key];
 				rows.push(newRow);
 			})
 		} else {
-			rows = [row];
+			rows = [row.slice()];
 		}
 		return rows;
 	}
@@ -250,13 +308,19 @@ export default class MainTable extends Vue {
 		this.cols.forEach(col => {
 			let cellValue = '';
 			if (col && col.property) {
-				if (entry && col.property in entry) {
-					cellValue = entry[col.property];
-				}
-			}
-			if (col && col.explode) {
-				if (entry && col.explode in entry) {
-					cellValue = entry[col.explode];
+				let parts = col.property.split('.');
+				let val = entry;
+				parts.forEach((part) => {
+					if (val !== null) {
+						if (val && part in val) {
+							val = val[part];
+						} else {
+							val = null;
+						}
+					}
+				});
+				if (val !== null) {
+					cellValue = val;
 				}
 			}
 			row.push(cellValue)
@@ -266,7 +330,8 @@ export default class MainTable extends Vue {
 
 	public addCol() {
 		this.cols.push({
-			group: false
+			group: false,
+			expand: false
 		})
 	}
 

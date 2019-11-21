@@ -1,0 +1,70 @@
+[
+  {
+    "name": "Bird",
+    "actions": ["fly", "eat", "sleep", "see"],
+    "amount": 20,
+    "props": {
+      "color": "red",
+      "age": 12,
+      "alive": true,
+      "tags": ["forest", "sky", "earth"],
+      "dates": {
+        "birth": 1137581683,
+        "dead": null
+      }
+    }
+  },
+  {
+    "name": "Monkey",
+    "actions": ["eat", "sleep", "see"],
+    "amount": 51,
+    "props": {
+      "color": "yellow",
+      "age": 4,
+      "alive": true,
+      "tags": ["forest", "earth"],
+      "dates": {
+        "birth": 1032581683,
+        "dead": null
+      }
+    }
+  },
+  {
+    "name": "Cat",
+    "actions": ["meow", "eat", "sleep", "see"],
+    "amount": 423,
+    "props": {
+      "color": "black",
+      "age": 12,
+      "alive": false,
+      "tags": ["house", "earth"],
+      "dates": {
+        "birth": 1132581683,
+        "dead": null
+      }
+    }
+  },
+  {
+    "name": "Elephant",
+    "actions": ["carry", "eat", "see"],
+    "amount": 7,
+    "props": {
+      "color": "grey",
+      "age": 104,
+      "alive": false,
+      "tags": ["earth", "desert"],
+      "dates": {
+        "birth": 1122581683,
+        "dead": null
+      }
+    }
+  },
+  {
+    "name": "Mouse",
+    "actions": [],
+    "amount": null,
+    "props": {
+      "alive": false
+    }
+  }
+]

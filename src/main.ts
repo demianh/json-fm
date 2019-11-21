@@ -5,8 +5,9 @@ import store from './store'
 import BootstrapVue from 'bootstrap-vue'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 import 'bootstrap/dist/css/bootstrap.css'
+import 'vue-simple-suggest/dist/styles.css'
 
-Vue.use(BootstrapVue)
+Vue.use(BootstrapVue);
 
 
 Vue.config.productionTip = false;

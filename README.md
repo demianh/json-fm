@@ -14,3 +14,10 @@ yarn serve
 ```
 yarn build
 ```
+
+## TODO
+
+* Array Index Accessor / Expander
+* Sums
+* Remove rows
+* Cell Formatter
