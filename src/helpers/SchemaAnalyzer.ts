@@ -11,7 +11,6 @@ export default class SchemaAnalyzer {
 	public getSchema(): {[prop: string]: any } {
 		let schema: any = {};
 		this.analyzeArray(schema, this.json);
-		console.log(schema);
 		return schema;
 	}
 

@@ -167,7 +167,7 @@ export default class MainTable extends Vue {
 	}
 
 	get expandedSheet() {
-		let rows = this.rawSheet;
+		let rows = this.rawSheet.slice();
 		this.cols.forEach((col, index) => {
 			if (col.expand) {
 				let expanded: any[] = [];
@@ -181,7 +181,7 @@ export default class MainTable extends Vue {
 	}
 
 	get filteredSheet() {
-		let rows = this.expandedSheet;
+		let rows = this.expandedSheet.slice();
 		if (this.hasFilters) {
 			try {
 				rows = rows.filter(row => {
@@ -200,7 +200,7 @@ export default class MainTable extends Vue {
 	}
 
 	get groupedSheet() {
-		let rows = this.filteredSheet;
+		let rows = this.filteredSheet.slice();
 		if (this.hasGroupCols) {
 			let hashes = new Map();
 			let groupRows: any[] = [];
@@ -232,17 +232,25 @@ export default class MainTable extends Vue {
 					hashObj.push(row[groupCol])
 				});
 				let hash = this.hash(hashObj);
-				row.push(hashes.get(hash));
+				Vue.set(row, this.cols.length, hashes.get(hash))
 			});
 
 			rows = groupRows;
+
+		} else {
+			// remove count row
+			if (rows.length > 0 && rows[0].length > this.cols.length) {
+				rows.forEach((row) => {
+					Vue.delete(row, this.cols.length)
+				});
+			}
 		}
 		return rows;
 	}
 
 	get sortedSheet() {
 		// sort
-		return this.groupedSheet.sort((a, b) => {
+		return this.groupedSheet.slice().sort((a, b) => {
 			let sortIndex = this.sortBy[0][0];
 			let sortOrder = this.sortBy[0][1];
 			let ca = a[sortIndex];
